@@ -1,0 +1,932 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// Get the base64 string from the specific path\nlet base64String = $input.first().json.choices[0].message.images[0].image_url.url;\n\n// Remove the data URI prefix if it exists\nif (base64String.startsWith('data:image/')) {\n  // Find the comma that separates the prefix from the actual base64 data\n  const commaIndex = base64String.indexOf(',');\n  if (commaIndex !== -1) {\n    base64String = base64String.substring(commaIndex + 1);\n  }\n}\n\nreturn [{\n  json: {\n    base64_data: base64String\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1040,
+        640
+      ],
+      "id": "785c16d5-9eb8-446d-a990-09d8f2050192",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "base64_data",
+        "options": {
+          "fileName": "generated_image",
+          "mimeType": "image/png"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        -816,
+        640
+      ],
+      "id": "0c281da6-40ec-48cd-b9b9-7eff5305f768",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openRouterApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"google/gemini-2.5-flash-image-preview\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": [\n        {\n          \"type\": \"text\",\n          \"text\": \"{{ $('Send message and wait for response').item.json.data.text }}. Photoréaliste pour une publicité UGC. ratio 1:1.\"\n        },\n        {\n          \"type\": \"image_url\",\n          \"image_url\": {\n            \"url\": \"https://api.telegram.org/file/bot{{ $('Edit Fields').item.json.telegram_token }}/{{ $json.result.file_path }}\"\n          }\n        }\n      ]\n    }\n  ]\n  \n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1264,
+        640
+      ],
+      "id": "6de7108a-ed36-42fd-b078-a7335285474f",
+      "name": "HTTP Request",
+      "credentials": {
+        "openRouterApi": {
+          "id": "TF3SmWv35v8ocoPo",
+          "name": "OpenRouter Nano Banana"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1280,
+        416
+      ],
+      "id": "326ec0f6-e332-4da9-bfd2-9fd5f706d2b9",
+      "name": "Telegram Trigger",
+      "webhookId": "c578267b-4fca-49f6-a52f-bd354bd4e4f4",
+      "executeOnce": false,
+      "credentials": {
+        "telegramApi": {
+          "id": "SPO1eSWUUngRMDaw",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "daaeed7f-da2b-4c9a-a33e-d78c619e93cc",
+              "name": "telegram_token",
+              "value": "8429503878:AAGpsIPKAcnAh7bt7uoDJshu1aRr3mcATHs",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1024,
+        416
+      ],
+      "id": "b0a0e1e8-a387-40ee-bf45-19d1db891531",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "message": "Merci d'avoir téléchargé l'image. Veuillez fournir vos instructions.",
+        "responseType": "freeText",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -784,
+        416
+      ],
+      "id": "1ee7b2ae-8d9a-459c-a174-4094eaa606d5",
+      "name": "Send message and wait for response",
+      "webhookId": "4ee08df4-d0e9-4d2f-81f9-d7e38d9b17cb",
+      "alwaysOutputData": false,
+      "credentials": {
+        "telegramApi": {
+          "id": "SPO1eSWUUngRMDaw",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $('Telegram Trigger').item.json.message.photo[2].file_id }}",
+        "download": false
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -560,
+        416
+      ],
+      "id": "f2c428e5-4fd2-4477-bdb0-54a2d492f837",
+      "name": "Get a file",
+      "webhookId": "13857ee5-781f-4e1c-9416-aad416df72ac",
+      "alwaysOutputData": false,
+      "credentials": {
+        "telegramApi": {
+          "id": "SPO1eSWUUngRMDaw",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "binaryData": true,
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -560,
+        640
+      ],
+      "id": "82222653-c06d-45ee-8719-d74e3ba888d3",
+      "name": "Send a photo message",
+      "webhookId": "22be872e-27aa-420b-be32-265ca6271a49",
+      "credentials": {
+        "telegramApi": {
+          "id": "SPO1eSWUUngRMDaw",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "message": "Veuillez fournir une idée de dialogue pour votre annonce.",
+        "responseType": "freeText",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        256,
+        304
+      ],
+      "id": "976a38fc-b227-42e9-b635-4394da087c77",
+      "name": "Send message and wait for response1",
+      "webhookId": "1739c0ea-8542-41df-8717-694446f2196d",
+      "credentials": {
+        "telegramApi": {
+          "id": "SPO1eSWUUngRMDaw",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Voici ce que je recherche : {{ $json.data.text }}\n\nVoici le contenu de l'image initiale qui sera utilisée pour générer la vidéo :\n\n{{ $('HTTP Request3').item.json.choices[0].message.content }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Vous êtes un expert dans la création de scripts pour des publicités authentiques de type UGC qui semblent naturelles et non scénarisées.\n\nVotre tâche consiste à créer un script vidéo en deux segments basé sur le concept de l'utilisateur. La vidéo commence par l'image fournie.\n\nCONTRAINTES CRITIQUES :\n- NE PAS ajouter d'objets qui ne figurent pas dans l'image originale (pas de nourriture, d'accessoires, d'outils, etc.).\n- NE PAS supprimer d'objets qui se trouvent dans l'image originale.\n- La personne ne doit interagir qu'avec des objets/éléments visibles dans l'image source.\n- Les actions doivent être physiquement possibles compte tenu de la position de départ de la personne et de son environnement.\n- Pas de texte ou de légende supplémentaire\n\nEXIGENCES :\n- Chaque segment doit durer 7 à 8 secondes d'action/dialogue réaliste.\n- Inclure des mouvements de caméra lorsqu'ils améliorent la narration (zoom avant, panoramique, inclinaison, etc.).\n- Les actions doivent être spécifiques et filmables.\n- Les dialogues doivent avoir l'air d'une conversation et ne pas être scénarisés.\n- Montrer plutôt que raconter - les actions doivent démontrer visuellement les avantages du produit.\n- Utilisez des guillemets simples pour tout dialogue.\n- Restez authentique - évitez le langage trop promotionnel\n\nLe contexte de l'image sera fourni pour guider ce qui est réellement visible et possible.\n\nOutput format:\n{\n« segment-1 » : « [mouvement de caméra si nécessaire] + [action spécifique utilisant uniquement les éléments visibles] + [dialogue naturel le cas échéant] »,\n« segment-2 » : « [mouvement de caméra si nécessaire] + [action spécifique utilisant uniquement les éléments visibles] + [dialogue naturel le cas échéant] ».\"\n}\n\nExemple de mouvements de caméra : la caméra zoome lentement, la caméra fait un panoramique de gauche à droite, la caméra s'incline vers le haut, la caméra recule\nExemple d'actions contraintes : ajuste la sangle visible, déplace son poids sur la surface visible, se tourne vers la caméra, fait un geste de la main libre"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -112,
+        560
+      ],
+      "id": "42a65159-4749-4f97-9c17-bbcab5c7dcd3",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "claude-sonnet-4-20250514",
+          "cachedResultName": "Claude 4 Sonnet"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        -224,
+        720
+      ],
+      "id": "ec1166ca-48b0-4fb3-b233-86cae6e7ca5a",
+      "name": "Anthropic Chat Model",
+      "credentials": {
+        "anthropicApi": {
+          "id": "WXQf5QsxCs3AyxlW",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n\"segment-1\": \"the man tugs his sleeve and describes how elastic the fabric is\",\n\"segment-2\": \"the man raises his arms to stretch, and the shirt flows with his movements\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        128,
+        736
+      ],
+      "id": "fc854e4a-7f95-4782-a68b-404171f01ff3",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "output",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        272,
+        560
+      ],
+      "id": "1ce6efab-f5c6-402b-ab24-f5a0c620dbe5",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.kie.ai/api/v1/veo/generate",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "=json",
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "jsonBody": "={\n  \"prompt\": \"{{ $json.output }}\",\n  \"imageUrls\": [\n    \"https://api.telegram.org/file/bot{{ $('Edit Fields').item.json.telegram_token }}/{{ $('Get a file1').item.json.result.file_path }}\"\n  ],\n  \"model\": \"veo3_fast\",\n  \"aspectRatio\": \"16:9\",\n  \"seeds\": 12345,\n  \"enableFallback\": false\n} ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        688,
+        432
+      ],
+      "id": "b5e2cab6-2337-43c6-82ee-bb5c401887b1",
+      "name": "HTTP Request1",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "6FnJz9IoacuCaQ7R",
+          "name": "KIE AI - Bearer Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.result.photo[3].file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -144,
+        304
+      ],
+      "id": "841b150a-19c2-486f-b0f1-992a8afef29a",
+      "name": "Get a file1",
+      "webhookId": "2bc7bf68-ed5a-41e8-a377-c971fcbf7dd2",
+      "credentials": {
+        "telegramApi": {
+          "id": "SPO1eSWUUngRMDaw",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 60
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        896,
+        432
+      ],
+      "id": "1c378513-911f-4bee-ba88-5d1132da068f",
+      "name": "Wait",
+      "webhookId": "41f3bf3a-fc54-4162-99c9-2b37a06adcb0"
+    },
+    {
+      "parameters": {
+        "url": "https://api.kie.ai/api/v1/veo/record-info",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "taskId",
+              "value": "={{ $json.data.taskId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1104,
+        432
+      ],
+      "id": "a225f148-835b-4948-adae-4c6f73d40441",
+      "name": "HTTP Request2",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "6FnJz9IoacuCaQ7R",
+          "name": "KIE AI - Bearer Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "data.response.resultUrls"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1552,
+        384
+      ],
+      "id": "d1023d43-7938-44a3-bb16-b633356bc279",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "videoSources": {
+          "sources": [
+            {
+              "value": "={{ $json.resultUrls[0][0] }}"
+            },
+            {
+              "value": "={{ $json.resultUrls[1][0] }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-mediafx.mediaFX",
+      "typeVersion": 1,
+      "position": [
+        1744,
+        384
+      ],
+      "id": "b648af0c-ee8d-44f2-9c0d-5ce6a22982e6",
+      "name": "Merge video"
+    },
+    {
+      "parameters": {
+        "operation": "sendVideo",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "binaryData": true,
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1936,
+        384
+      ],
+      "id": "d37c2c9e-26eb-4c32-8aff-881d6e0eed36",
+      "name": "Send a video",
+      "webhookId": "bce3aa2c-b445-40a7-a9e1-36388cbb33e9",
+      "credentials": {
+        "telegramApi": {
+          "id": "SPO1eSWUUngRMDaw",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.data.successFlag }}",
+                    "rightValue": 1,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    },
+                    "id": "f29a6ac3-9fb2-44a7-ba55-b1b82b42b0bd"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Success"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "490fc789-6e8c-423e-b13e-7b1610aa79e9",
+                    "leftValue": "={{ $json.data.successFlag }}",
+                    "rightValue": 0,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "In Process"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1296,
+        416
+      ],
+      "id": "6f4c6404-efaf-4891-af22-1d8c6af41430",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "=La génération de la vidéo a échoué",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1552,
+        576
+      ],
+      "id": "dd3d7502-4c90-4c58-a33f-21187e4e3abe",
+      "name": "Send a text message",
+      "webhookId": "e00c2c2c-533f-4ca4-bd03-3a7760f2524f",
+      "credentials": {
+        "telegramApi": {
+          "id": "SPO1eSWUUngRMDaw",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openRouterApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"google/gemini-2.5-flash-image-preview\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": [\n        {\n          \"type\": \"text\",\n          \"text\": \"Fournissez une description détaillée du contenu de l'image. Le cadre, le(s) sujet(s), ce que le sujet fait ou tient, etc.\"\n        },\n        {\n          \"type\": \"image_url\",\n          \"image_url\": {\n            \"url\": \"https://api.telegram.org/file/bot{{ $('Edit Fields').item.json.telegram_token }}/{{ $json.result.file_path }}\"\n          }\n        }\n      ]\n    }\n  ]\n  \n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        48,
+        304
+      ],
+      "id": "056bfd13-e6ab-4642-81bd-bdb7ccd31c60",
+      "name": "HTTP Request3",
+      "credentials": {
+        "openRouterApi": {
+          "id": "TF3SmWv35v8ocoPo",
+          "name": "OpenRouter Nano Banana"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Generate Image",
+        "height": 512,
+        "width": 1024
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1376,
+        304
+      ],
+      "typeVersion": 1,
+      "id": "f428decf-c2da-449a-ac2b-3c2621042522",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Video Generation Prompts",
+        "height": 576,
+        "width": 832,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -304,
+        256
+      ],
+      "typeVersion": 1,
+      "id": "3966fa43-9d3d-4608-9788-515c7ec55475",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Generate and output video",
+        "height": 512,
+        "width": 1616
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        576,
+        304
+      ],
+      "typeVersion": 1,
+      "id": "7a0f84d1-833a-46aa-ba9d-643470c90129",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Nano Banana 🍌 + VEO3 Fast UGC Generator by Growth Ai",
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "f284178a-e22f-4f8d-a90e-7f5dd37c0b29",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "# Phase 1 : Réception et amélioration de l'image\n\n## Ce que vous faites :\n1. **Envoyez votre image** sur Telegram (photo produit, croquis, n'importe quoi)\n2. **Tapez vos instructions** quand le bot vous le demande\n   - Exemple : \"Style publicitaire professionnel\" ou \"Améliorer l'éclairage\"\n\n## Ce que fait le système :\n3. **Analyse votre image** avec l'IA Gemini\n4. **Génère une version optimisée** en format carré (1:1)\n5. **Vous renvoie l'image améliorée** prête pour la vidéo\n\n## Résultat :\n✅ Image de qualité professionnelle en quelques secondes  \n✅ Style photoréaliste parfait pour la publicité  \n✅ Format optimisé pour les réseaux sociaux",
+        "height": 448,
+        "width": 768,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1280,
+        896
+      ],
+      "typeVersion": 1,
+      "id": "9ffb46b7-9bf5-442b-a763-755fdf9ca43e",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "# Phase 2 : Analyse et création du script\n\n## Ce que vous faites :\n\nDonnez votre idée de dialogue quand le bot vous le demande\n\nExemple : \"Parler des avantages du produit\" ou \"Témoignage client satisfait\"\n\n\n\n## Ce que fait le système :\n2. Analyse l'image en détail (objets présents, position de la personne, environnement)\n3. Combine votre idée avec l'analyse visuelle\n4. Génère un script en 2 segments de 7-8 secondes chacun avec Claude AI\n5. Respecte les contraintes réalistes (pas d'objets ajoutés, actions possibles uniquement)\n## Résultat :\n✅ Script vidéo prêt à filmer en 2 parties\n✅ Dialogue naturel et authentique\n✅ Actions réalisables avec ce qui est visible dans l'image",
+        "height": 512,
+        "width": 768,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -272,
+        896
+      ],
+      "typeVersion": 1,
+      "id": "f1642db6-4b9c-43d8-a648-ef74796c168a",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "# Phase 3 : Génération vidéo\n\n## Ce que vous faites :\n\nRien ! Attendez simplement que la magie opère\n\n## Ce que fait le système :\n2. Génère 2 vidéos distinctes avec VEO3 (une par segment de script)\n3. Vérifie le statut de génération toutes les 10 secondes\n4. Fusionne les 2 segments en une seule vidéo fluide\n5. Vous envoie la vidéo finale sur Telegram\n## En cas de problème :\n\nSi la génération échoue → Message d'erreur automatique\nSi c'est trop long → Le système re-vérifie automatiquement\n\n## Résultat :\n✅ Vidéo UGC complète en format vertical (9:16)\n✅ Qualité cinématographique avec VEO3\n✅ Prête à publier sur TikTok, Instagram, YouTube Shorts",
+        "height": 576,
+        "width": 768,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1008,
+        896
+      ],
+      "typeVersion": 1,
+      "id": "46710012-aea9-4514-b67d-596f49a7dbc7",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "content": "# Phase 0 : Initialisation et prérequis\n## Ce que vous devez configurer :\n### 1. Comptes et API requis :\n\nTelegram Bot : Créer un bot via @BotFather\nOpenRouter : Compte avec accès à Gemini 2.5 Flash\nAnthropic : API Claude 4 Sonnet\nKIE.AI : Accès à VEO3 Fast\nN8N : Instance pour héberger le workflow\n\n### 2. Credentials à configurer dans N8N :\n\ntelegramApi : Token de votre bot Telegram\nopenRouterApi : Clé API OpenRouter\nanthropicApi : Clé API Anthropic\nhttpBearerAuth : Token KIE.AI pour VEO3\n\n### 3. Configuration finale :\n\nToken Telegram : À remplacer dans le node \"Edit Fields\"\nWebhook : Configurer l'URL du bot Telegram\nTest : Vérifier que tous les services répondent\n\n## Résultat :\n✅ Automation prête à recevoir vos images\n✅ Tous les services connectés et fonctionnels\n✅ Workflow opérationnel 24h/24",
+        "height": 704,
+        "width": 592,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2000,
+        192
+      ],
+      "typeVersion": 1,
+      "id": "56c1ece8-6395-403b-a41a-c22c3c28883e",
+      "name": "Sticky Note7"
+    }
+  ],
+  "connections": {
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Send a photo message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Send message and wait for response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send message and wait for response": {
+      "main": [
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a photo message": {
+      "main": [
+        [
+          {
+            "node": "Get a file1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send message and wait for response1": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anthropic Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Merge video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge video": {
+      "main": [
+        [
+          {
+            "node": "Send a video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request3": {
+      "main": [
+        [
+          {
+            "node": "Send message and wait for response1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "393ca9e36a1f81b0f643c72792946a5fe5e49eb4864181ba4032e5a408278263"
+  }
+}
